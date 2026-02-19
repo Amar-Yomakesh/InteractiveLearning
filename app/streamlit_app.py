@@ -1,5 +1,56 @@
 import os
+import bcrypt
 import streamlit as st
+
+# ---------------------------------------------------------------------------
+# Page config — must be the very first Streamlit call
+# ---------------------------------------------------------------------------
+
+st.set_page_config(page_title="CloudHub RAG Assistant", layout="centered")
+
+# ---------------------------------------------------------------------------
+# Authentication gate
+# Credentials are read from st.secrets — never hardcoded here.
+#
+# Required secrets shape (in .streamlit/secrets.toml or Streamlit Cloud UI):
+#   [auth]
+#   username      = "your_username"
+#   password_hash = "$2b$12$..."   # bcrypt hash — see secrets.toml.example
+# ---------------------------------------------------------------------------
+
+def _login_gate() -> None:
+    """Block the app until the user authenticates. No-op once authenticated."""
+    if st.session_state.get("authenticated"):
+        return
+
+    if "auth" not in st.secrets:
+        st.error(
+            "Authentication is not configured. "
+            "Add an `[auth]` section to `.streamlit/secrets.toml`."
+        )
+        st.stop()
+
+    st.title("CloudHub Documentation Assistant")
+    st.subheader("Login")
+
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Login")
+
+    if submitted:
+        expected_user = st.secrets["auth"]["username"]
+        expected_hash = st.secrets["auth"]["password_hash"].encode()
+        if username == expected_user and bcrypt.checkpw(password.encode(), expected_hash):
+            st.session_state["authenticated"] = True
+            st.rerun()
+        else:
+            st.error("Invalid username or password.")
+
+    st.stop()
+
+
+_login_gate()
 
 # ---------------------------------------------------------------------------
 # API key resolution
@@ -17,16 +68,20 @@ import config  # noqa: E402 — imported after env is potentially set
 from utils import ChromaDBManager, RAGAssistant, CloudHubDocsScraper, DocumentChunker  # noqa: E402
 
 # ---------------------------------------------------------------------------
-# Page config
+# App header
 # ---------------------------------------------------------------------------
 
-st.set_page_config(page_title="CloudHub RAG Assistant", layout="centered")
 st.title("CloudHub Documentation Assistant")
 st.caption("Ask questions about MuleSoft CloudHub — powered by RAG")
 
 # ---------------------------------------------------------------------------
-# Sidebar: API key input (shown only when key is absent from secrets/env)
+# Sidebar: logout + API key input (shown only when key is absent from secrets/env)
 # ---------------------------------------------------------------------------
+
+with st.sidebar:
+    if st.button("Logout"):
+        st.session_state.clear()
+        st.rerun()
 
 api_key = _resolve_api_key()
 
