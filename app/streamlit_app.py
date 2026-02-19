@@ -1,22 +1,11 @@
+import config
 import os
 import bcrypt
 import streamlit as st
 
-# ---------------------------------------------------------------------------
-# Page config — must be the very first Streamlit call
-# ---------------------------------------------------------------------------
 
 st.set_page_config(page_title="CloudHub RAG Assistant", layout="centered")
 
-# ---------------------------------------------------------------------------
-# Authentication gate
-# Credentials are read from st.secrets — never hardcoded here.
-#
-# Required secrets shape (in .streamlit/secrets.toml or Streamlit Cloud UI):
-#   [auth]
-#   username      = "your_username"
-#   password_hash = "$2b$12$..."   # bcrypt hash — see secrets.toml.example
-# ---------------------------------------------------------------------------
 
 def _login_gate() -> None:
     """Block the app until the user authenticates. No-op once authenticated."""
@@ -52,10 +41,6 @@ def _login_gate() -> None:
 
 _login_gate()
 
-# ---------------------------------------------------------------------------
-# API key resolution
-# Must happen before importing config/utils so the module-level value is right
-# ---------------------------------------------------------------------------
 
 def _resolve_api_key() -> str | None:
     """st.secrets (Streamlit Cloud) → environment variable → None (UI prompt)."""
@@ -64,19 +49,12 @@ def _resolve_api_key() -> str | None:
     return os.getenv("OPENAI_API_KEY") or None
 
 
-import config  # noqa: E402 — imported after env is potentially set
 from utils import ChromaDBManager, RAGAssistant, CloudHubDocsScraper, DocumentChunker  # noqa: E402
 
-# ---------------------------------------------------------------------------
-# App header
-# ---------------------------------------------------------------------------
 
 st.title("CloudHub Documentation Assistant")
 st.caption("Ask questions about MuleSoft CloudHub — powered by RAG")
 
-# ---------------------------------------------------------------------------
-# Sidebar: logout + API key input (shown only when key is absent from secrets/env)
-# ---------------------------------------------------------------------------
 
 with st.sidebar:
     if st.button("Logout"):
@@ -94,19 +72,16 @@ if not api_key:
             placeholder="sk-...",
             help="Used only for this session. Never stored by this app.",
         )
-        st.caption("[Get a key at platform.openai.com](https://platform.openai.com/api-keys)")
+        st.caption(
+            "[Get a key at platform.openai.com](https://platform.openai.com/api-keys)")
 
     if not api_key:
         st.info("Enter your OpenAI API key in the sidebar to get started.")
         st.stop()
 
-# Propagate so ChromaDBManager (via config) picks up the correct value
 os.environ["OPENAI_API_KEY"] = api_key
-config.OPENAI_API_KEY = api_key  # override the module-level variable
+config.OPENAI_API_KEY = api_key
 
-# ---------------------------------------------------------------------------
-# DB initialisation — cached for the lifetime of the server process
-# ---------------------------------------------------------------------------
 
 @st.cache_resource
 def get_db():
@@ -118,24 +93,21 @@ def get_db():
 
 db = get_db()
 
-# ---------------------------------------------------------------------------
-# Auto-ingestion: runs once when the collection is empty (first cold start)
-# On Streamlit Community Cloud the filesystem resets on each new deployment,
-# so this triggers automatically after every deploy.
-# ---------------------------------------------------------------------------
 
 if db.collection.count() == 0:
     with st.status(
         "Building knowledge base — runs once and may take a few minutes…",
         expanded=True,
     ) as status:
-        st.write(f"Scraping `{config.SCRAPE_BASE_URL}` (up to {config.SCRAPE_MAX_PAGES} pages)…")
+        st.write(
+            f"Scraping `{config.SCRAPE_BASE_URL}` (up to {config.SCRAPE_MAX_PAGES} pages)…")
         docs = CloudHubDocsScraper().scrape()
 
         st.write(f"Scraped **{len(docs)}** pages. Chunking…")
         chunks = DocumentChunker().chunk_documents(docs)
 
-        st.write(f"Created **{len(chunks)}** chunks. Generating embeddings and storing…")
+        st.write(
+            f"Created **{len(chunks)}** chunks. Generating embeddings and storing…")
         db.add_chunks(chunks)
 
         status.update(
@@ -146,9 +118,6 @@ if db.collection.count() == 0:
 
 rag = RAGAssistant(db)
 
-# ---------------------------------------------------------------------------
-# Chat UI
-# ---------------------------------------------------------------------------
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -159,7 +128,8 @@ for msg in st.session_state.messages:
         if msg["role"] == "assistant" and msg.get("sources"):
             with st.expander("Sources"):
                 for src in msg["sources"]:
-                    st.markdown(f"- **{src['source_title']}**  \n  {src['source_url']}")
+                    st.markdown(
+                        f"- **{src['source_title']}**  \n  {src['source_url']}")
 
 if prompt := st.chat_input("Ask a question about CloudHub..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -181,8 +151,10 @@ if prompt := st.chat_input("Ask a question about CloudHub..."):
         if result["sources"]:
             with st.expander("Sources"):
                 for src in result["sources"]:
-                    st.markdown(f"- **{src['source_title']}**  \n  {src['source_url']}")
+                    st.markdown(
+                        f"- **{src['source_title']}**  \n  {src['source_url']}")
 
     st.session_state.messages.append(
-        {"role": "assistant", "content": result["answer"], "sources": result["sources"]}
+        {"role": "assistant",
+            "content": result["answer"], "sources": result["sources"]}
     )

@@ -2,21 +2,21 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load .env from project root
+
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _env_file = _PROJECT_ROOT / ".env"
 if _env_file.exists():
     load_dotenv(_env_file, override=True)
 
-# --- OpenAI ---
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
-# --- Scraping ---
-SCRAPE_BASE_URL = os.getenv("SCRAPE_BASE_URL", "https://docs.mulesoft.com/cloudhub/")
+
+SCRAPE_BASE_URL = os.getenv(
+    "SCRAPE_BASE_URL", "https://docs.mulesoft.com/cloudhub/")
 SCRAPE_MAX_PAGES = int(os.getenv("SCRAPE_MAX_PAGES", "100"))
 SCRAPE_DELAY = float(os.getenv("SCRAPE_DELAY", "1.0"))
 
-# --- Chunking ---
+
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "800"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "150"))
 

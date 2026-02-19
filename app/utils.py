@@ -14,10 +14,6 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import config
 
 
-# ---------------------------------------------------------------------------
-# Scraper
-# ---------------------------------------------------------------------------
-
 class CloudHubDocsScraper:
     """Recursively crawls a documentation site and extracts clean text."""
 
@@ -128,10 +124,6 @@ class CloudHubDocsScraper:
         return self.scraped_data
 
 
-# ---------------------------------------------------------------------------
-# Chunker
-# ---------------------------------------------------------------------------
-
 class DocumentChunker:
     """Splits documents into smaller pieces for embedding."""
 
@@ -165,10 +157,6 @@ class DocumentChunker:
             f"Created {len(all_chunks)} chunks from {len(scraped_data)} documents")
         return all_chunks
 
-
-# ---------------------------------------------------------------------------
-# ChromaDB manager
-# ---------------------------------------------------------------------------
 
 class ChromaDBManager:
     """Manages ChromaDB operations including embeddings and storage."""
@@ -273,10 +261,6 @@ class ChromaDBManager:
         query_embedding = self.generate_embedding(query_text)
         return self.collection.query(query_embeddings=[query_embedding], n_results=n_results)
 
-
-# ---------------------------------------------------------------------------
-# RAG assistant
-# ---------------------------------------------------------------------------
 
 class RAGAssistant:
     """Retrieval-Augmented Generation over the vector store."""
