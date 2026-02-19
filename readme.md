@@ -10,6 +10,7 @@ A Retrieval-Augmented Generation (RAG) assistant that scrapes any web-based docu
 - [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
+- [Deploying to Streamlit Community Cloud](#deploying-to-streamlit-community-cloud)
 - [Generalising to Any Documentation Source](#generalising-to-any-documentation-source)
 - [Moving from Local to Cloud Vector DB](#moving-from-local-to-cloud-vector-db)
 - [Use Cases](#use-cases)
@@ -153,6 +154,56 @@ All settings are environment variables with sane defaults (see `.env.example`):
 | `LLM_MODEL` | `gpt-4o-mini` | OpenAI chat model |
 | `MAX_RETRIEVAL_CHUNKS` | 10 | Top-k chunks retrieved per query |
 | `MAX_CONTEXT_TOKENS` | 6000 | Token budget for retrieved context |
+
+---
+
+## Deploying to Streamlit Community Cloud
+
+### 1. Add your API key as a secret
+
+In the Streamlit dashboard: **App settings → Secrets**, paste:
+
+```toml
+OPENAI_API_KEY = "sk-proj-your-key-here"
+```
+
+The app reads `st.secrets["OPENAI_API_KEY"]` first, then falls back to the environment variable, and finally falls back to a sidebar text input. The sidebar input lets any visitor supply their own key (useful for demos or bring-your-own-key apps).
+
+For local development, copy the template and fill it in:
+
+```bash
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml
+# Edit .streamlit/secrets.toml — it is gitignored
+```
+
+### 2. Set the main file path
+
+In the Streamlit dashboard, set the **Main file path** to:
+
+```
+app/streamlit_app.py
+```
+
+### 3. Cold start & auto-ingestion
+
+Streamlit Community Cloud has an **ephemeral filesystem** — the `vector_db/` directory is wiped on every new deployment and after idle restarts. The app handles this automatically:
+
+```
+App starts
+    │
+    ▼
+collection.count() == 0?
+    │
+    ├── Yes → st.status spinner
+    │          Scrape → Chunk → Embed → Store
+    │          st.rerun() once complete
+    │
+    └── No  → Chat UI loads immediately
+```
+
+On the first request after a cold start, visitors see a progress display while the knowledge base is rebuilt (typically 2–5 minutes depending on `SCRAPE_MAX_PAGES`). Subsequent requests within the same deployment serve instantly from the cached DB.
+
+To avoid rebuilding on every deployment, switch to a persistent cloud vector store (see [Moving from Local to Cloud Vector DB](#moving-from-local-to-cloud-vector-db)).
 
 ---
 
