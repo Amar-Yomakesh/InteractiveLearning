@@ -1,0 +1,9 @@
+openai>=1.0
+chromadb>=0.4
+python-dotenv>=1.0
+streamlit>=1.30
+beautifulsoup4>=4.12
+lxml>=5.0
+requests>=2.31
+langchain-text-splitters>=0.2
+tiktoken>=0.7

@@ -1,0 +1,21 @@
+# Environment & secrets
+.env
+.env.*
+
+# Virtual environment
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Vector DB (large binary data)
+vector_db/
+
+# OS
+Thumbs.db
+.DS_Store
